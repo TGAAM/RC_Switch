@@ -1,17 +1,18 @@
 # Verification checks for commands
 
 import discord
+import os
 
 # user roles
 #playerRoles = [os.environ['RC_PLAYER_ROLES'].split(",")]
 
 # channel whitelist
-whitelistChannels = [os.environ['RC_CHANNEL_WHITELIST'].split(",")]
+whitelistChannels = list(map(int,os.environ['RC_CHANNEL_WHITELIST'].split(",")))
 
 
 # was the command from an active room?
 async def is_valid_room(ctx):
-    return (ctx.channel.id in whitelistChannel)
+    return (ctx.channel.id in whitelistChannels)
 
 '''
 # does the user have an eligible role to run commands?
