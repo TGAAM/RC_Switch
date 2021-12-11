@@ -61,7 +61,7 @@ async def on_command_error(ctx, error):
         return
     elif isinstance(error, CommandNotFound):
         if (await checks_list.is_valid_room(ctx)):
-            await ctx.send("commandNotFound")
+            await ctx.send("That's not a valid command")
         return
     elif isinstance(error, MissingRequiredArgument):
         if (await checks_list.is_valid_room(ctx)):
@@ -102,13 +102,11 @@ async def process_input(ctx, input, cnt=None):
     if cnt_out_of_range(cnt):
         await ctx.send("Count out of range")
         return
-    if cnt_out_of_range(cnt):
-        await ctx.send("Count out of range")
-        return
     for i in range(cnt):
         sendCommand(s, input)
         time.sleep(1)
-    await ctx.send(input)
+    #await ctx.send(input)
+    print(input)
     return
 
 @bot.command()
@@ -120,8 +118,7 @@ async def home(ctx):
 @bot.command(aliases=["cap", "picture", "screenshot", "snapshot", "photo"])
 @commands.check(checks_list.is_valid_room)
 async def capture(ctx, cnt=None):
-    sendCommand(s, "click CAPTURE")
-    await ctx.send("capture")
+    await process_input(ctx, "click Capture", 1)
     return
 
 
