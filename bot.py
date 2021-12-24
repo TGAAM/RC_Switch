@@ -9,13 +9,10 @@
 # Other Commands
 # beep, hi, home
 
-# import modules
-# For hosting from Heroku/Github I had to include a Requirements.txt file with the following
-'''
-discord.py==1.3.3
-psycopg2==2.8.5
-'''
 
+
+from typing import Match
+from asyncio.tasks import sleep, wait, wait_for
 import discord, os, random, asyncio, traceback
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
@@ -61,11 +58,11 @@ async def on_command_error(ctx, error):
         return
     elif isinstance(error, CommandNotFound):
         if (await checks_list.is_valid_room(ctx)):
-            await ctx.send("That's not a valid command")
+            await ctx.message.reply("That's not a valid command")
         return
     elif isinstance(error, MissingRequiredArgument):
         if (await checks_list.is_valid_room(ctx)):
-            await ctx.send("You need to include more details for this command")
+            await ctx.message.reply("You need to include more details for this command")
         return
     raise error
 
@@ -80,10 +77,10 @@ def is_cnt_error (cnt):
         return True
     return False
     
-def cnt_out_of_range (cnt):
+def cnt_out_of_range (cnt, min, max):
     try:
-        assert cnt >= 1
-        assert cnt <= 10
+        assert cnt >= min
+        assert cnt <= max
     except:
         return True
     return False
@@ -91,22 +88,55 @@ def cnt_out_of_range (cnt):
 # Switch Commands
 # DU (DUP), DR (DRIGHT), DL (DLEFT), DD (DDOWN), A, B, X, Y, L, R, ZL, ZR, CAP (CAPTURE, PICTURE), PLUS, MINUS
 # LS (LEFTSTICK) <DIRECTION> <DURATION>, RS (RIGHTSTICK) <DIRECTION> <DURATION>
+# press {button} / release {button}
 
+# process input from the commands
 async def process_input(ctx, input, cnt=None):
     if cnt is None:
         cnt = 1
     if is_cnt_error(cnt):
-        await ctx.send("There's an issue with the count")
+        await ctx.message.reply("There's an issue with the count")
         return
     cnt = int(cnt)
-    if cnt_out_of_range(cnt):
-        await ctx.send("Count out of range")
+    if cnt_out_of_range(cnt, 1, 10):
+        await ctx.message.reply("Count out of range")
         return
     for i in range(cnt):
         sendCommand(s, input)
         time.sleep(1)
     #await ctx.send(input)
+    await ctx.message.add_reaction('✅')
     print(input)
+    return
+
+# handle stick inputs, noticeably different logic from buttons
+async def stick_input(ctx, stick, dir, cnt=None):
+    if cnt is None:
+        cnt = 1
+    if is_cnt_error(cnt):
+        await ctx.message.reply("There's an issue with the count")
+        return
+    cnt = int(cnt)
+    if cnt_out_of_range(cnt, 1, 5):
+        await ctx.message.reply("Count out of range")
+        return
+    sendCommand(s, "setStick " + stick + " " + dir)
+    await sleep(cnt)
+    sendCommand(s, "setStick " + stick + " 0 0")
+    await ctx.message.add_reaction('✅')
+    print(stick + " " + dir)
+    return
+
+# hold down the buttons
+def press(pressList=None):
+    for btn in pressList:
+        sendCommand(s, "press " + btn)
+    return
+
+# release held buttons
+def release(pressList=None):
+    for btn in pressList:
+        sendCommand(s, "release " + btn)
     return
 
 @bot.command()
@@ -121,6 +151,29 @@ async def capture(ctx, cnt=None):
     await process_input(ctx, "click Capture", 1)
     return
 
+@bot.command(aliases=["ru", "runUp"])
+@commands.check(checks_list.is_valid_room)
+async def rup(ctx, cnt=None):
+    await stick_input (ctx, "LEFT", "0 0x7FFF", cnt)
+    return
+
+@bot.command(aliases=["rd", "runDown"])
+@commands.check(checks_list.is_valid_room)
+async def rdown(ctx, cnt=None):
+    await stick_input (ctx, "LEFT", "0 -0x8000", cnt)
+    return
+
+@bot.command(aliases=["rl", "runLeft"])
+@commands.check(checks_list.is_valid_room)
+async def rleft(ctx, cnt=None):
+    await stick_input (ctx, "LEFT", "-0x8000 0", cnt)
+    return
+
+@bot.command(aliases=["rr", "runRight"])
+@commands.check(checks_list.is_valid_room)
+async def rright(ctx, cnt=None):
+    await stick_input (ctx, "LEFT", "0x7FFF 0", cnt)
+    return
 
 @bot.command(aliases=["du", "up"])
 @commands.check(checks_list.is_valid_room)
